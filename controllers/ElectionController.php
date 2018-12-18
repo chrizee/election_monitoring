@@ -7,6 +7,7 @@ use app\models\AnnouncedPuResults;
 use app\models\Lga;
 use app\models\Party;
 use app\models\PollingUnit;
+use app\models\States;
 use app\models\Ward;
 use Throwable;
 use Yii;
@@ -21,7 +22,7 @@ class ElectionController extends Controller
     }
 
     public function actionPoolingUnit() {
-        $pollingUnits = PollingUnit::find()->where(['<=', 'lga_id', 35])->andWhere(['!=', 'polling_unit_name', ''])->all();
+        $states = States::find()->all();
         if(Yii::$app->request->post("pooling_unit_uniqueid")) {
             $id = Yii::$app->request->post("pooling_unit_uniqueid");
             $announcedPu = AnnouncedPuResults::find()->where(['polling_unit_uniqueid' => $id])->all();
@@ -31,20 +32,21 @@ class ElectionController extends Controller
                 'announcedPu' => $announcedPu,
                 'show' => true,
                 'poolingUnit' => $pollingUnit,
-                'pollingUnits' => $pollingUnits,
+                'states' => $states
             ]);
         }else {
             return $this->render('pooling-unit', [
                 'show' => false,
-                'pollingUnits' => $pollingUnits,
+                'states' => $states,
             ]);
         }
     }
 
     public function actionLocalGovt() {
-        $localGovt = Lga::find()->where(['state_id' => 25])->all(); //get all lga in delta state
-        if(Yii::$app->request->post("lga")) {
-            $lgaId = Yii::$app->request->post("lga"); //get lga id
+        $states = States::find()->all();
+        //$localGovt = Lga::find()->where(['state_id' => 25])->all(); //get all lga in delta state
+        if(Yii::$app->request->post("lga_id")) {
+            $lgaId = Yii::$app->request->post("lga_id"); //get lga id
             $selectedLga = Lga::find()->where(["lga_id" => $lgaId])->one();
             //get all polling units uniqueid in that lga
             $pollingUnit = PollingUnit::find()->select('uniqueid')->where(['lga_id' => $lgaId])->all();
@@ -63,13 +65,15 @@ class ElectionController extends Controller
                 'announcedPu' => $announcedPu,
                 'announcedLga' => $announcedLga,
                 'show' => true,
-                'lgas' => $localGovt,
+                //'lgas' => $localGovt,
+                'states' => $states,
                 'selectedLga' => $selectedLga
             ]);
         }else {
             return $this->render('lga', [
                 'show' => false,
-                'lgas' => $localGovt
+                //'lgas' => $localGovt,
+                'states' => $states
             ]);
         }
     }
@@ -77,6 +81,7 @@ class ElectionController extends Controller
     public function actionCreate() {
         $pollingUnit = new PollingUnit();
         $puResult = new AnnouncedPuResults();
+        $states = States::find()->all();
         if($pollingUnit->load(Yii::$app->request->post()) && $pollingUnit->validate()) {
             $time = (new \DateTime())->format("Y-m-d H:i:s");
             $user = "User";
@@ -116,14 +121,11 @@ class ElectionController extends Controller
                 }
             }
         }
-        $lga = Lga::find()->select(['lga_name', 'lga_id'])->indexBy('lga_id')->column();
-        //$ward = Ward::find()->all();
         $party = Party::find()->all();
         return $this->render("create", [
             'pollingUnit' => $pollingUnit,
             'puResult' => $puResult,
-            'lga' => $lga,
-            //'ward' => $ward,
+            'states' => $states,
             'party' => $party
         ]);
     }
@@ -135,6 +137,29 @@ class ElectionController extends Controller
         $str = "<option value=''>--select ward--</option>";
         foreach ($wards as $ward) {
             $str .= "<option value='".$ward->ward_id."'>$ward->ward_name</option>";
+        }
+        return $str;
+    }
+
+    /*
+     * get lgas from state id
+     * */
+    public function actionGetLga() {
+        $stateId = Yii::$app->request->post("state_id");
+        $lgas = Lga::findAll(['state_id' => $stateId]);
+        $str = "<option value=''>--select local govt--</option>";
+        foreach ($lgas as $lga) {
+            $str .= "<option value='".$lga->lga_id."'>$lga->lga_name</option>";
+        }
+        return $str;
+    }
+
+    public function actionGetPoolingUnits() {
+        $lgaId = Yii::$app->request->post("lga_id");
+        $poolingUnits = PollingUnit::findAll(['lga_id' => $lgaId]);
+        $str = "<option value=''>--select pooling unit--</option>";
+        foreach ($poolingUnits as $units) {
+            $str .= "<option value='".$units->uniqueid."'>$units->polling_unit_name</option>";
         }
         return $str;
     }

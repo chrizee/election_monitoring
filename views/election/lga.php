@@ -21,11 +21,21 @@
         'CPP' => "#338899"
 ];?>
 <div class="form-group">
-    <select name="lga" class="form-control">
+    <div class="form-group">
+        <select name="state_id" class="form-control" required>
+            <option value="">--select state--</option>
+            <?php foreach ($states as $val):?>
+                <option value="<?= $val->state_id ?>"><?= $val->state_name ?></option>
+            <?php endforeach;?>
+        </select>
+    </div>
+
+
+    <select name="lga_id" class="form-control">
         <option value="">--select a local govt--</option>
-        <?php foreach ($lgas as $lga):?>
-            <option value="<?= $lga->lga_id ?>"><?= $lga->lga_name ?></option>
-        <?php endforeach;?>
+        <?php /*foreach ($lgas as $lga):*/?><!--
+            <option value="<?/*= $lga->lga_id */?>"><?/*= $lga->lga_name */?></option>
+        --><?php /*endforeach;*/?>
     </select>
 </div>
 
@@ -85,3 +95,21 @@
         </div>
     <?php endif; ?>
 </div>
+
+<?php $baseUrl =  Yii::$app->request->baseUrl; ?>
+<?php
+$string = <<< JS
+    $("body").on("change", "select[name='state_id']", function() {
+        let state = $(this).val();
+        $.post("$baseUrl/index.php/election/get-lga",{"state_id" : state}, function(result) {
+            if(result !== '') {
+                $("select[name='lga_id']").empty().append(result);
+            }else {
+                alert("No local govt for that state.");
+            }
+        })
+    }).on("change", "select[name='lga_id']", function(e) {
+        document.forms[0].submit();        
+    });
+JS;
+$this->registerJs($string)?>

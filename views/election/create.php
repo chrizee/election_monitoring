@@ -14,7 +14,18 @@
         <?= $form->field($pollingUnit, "polling_unit_name")->input('text', ['autofocus' => true])->label("Name of polling unit") ?>
         <?= $form->field($pollingUnit, "polling_unit_number")?>
         <?= $form->field($pollingUnit, "polling_unit_description") ?>
-        <?= $form->field($pollingUnit, "lga_id")->dropDownList($lga, ['prompt' => "Select local govt"]) ?>
+
+        <div class="form-group">
+            <label for="state_id">State</label>
+            <select name="state_id" class="form-control" required>
+                <option value="">--select state--</option>
+                <?php foreach ($states as $val):?>
+                    <option value="<?= $val->state_id ?>"><?= $val->state_name ?></option>
+                <?php endforeach;?>
+            </select>
+        </div>
+
+        <?= $form->field($pollingUnit, "lga_id")->dropDownList([], ['prompt' => "Select local govt"]) ?>
         <?= $form->field($pollingUnit, "ward_id")->dropDownList([], ['prompt' => "Select Ward"]) ?>
     </div>
     <div class="col-md-6 hidden" id="partyScore">
@@ -24,6 +35,7 @@
             <?= $form->field($puResult, 'party_score[]')->label($pa->partyname)?>
         <?php endforeach;?>
 
+
         <div class="form-group">
             <input type="submit" class="btn btn-primary" value="Submit">
         </div>
@@ -32,7 +44,16 @@
 <?php $baseUrl =  Yii::$app->request->baseUrl; ?>
 <?php
 $string = <<< JS
-    $("body").on("change", "select#lga_id", function() {
+    $("body").on("change", "select[name='state_id']", function() {
+        let state = $(this).val();
+        $.post("$baseUrl/index.php/election/get-lga",{"state_id" : state}, function(result) {
+            if(result !== '') {
+                $("select#lga_id").empty().append(result);
+            }else {
+                alert("No local govt for that state.");
+            }
+        })
+    }).on("change", "select#lga_id", function() {
         let lga = $(this).val();
         $.post("$baseUrl/index.php/election/get-wards",{"lga" : lga}, function(result) {
             if(result !== '') {
